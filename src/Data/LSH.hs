@@ -7,7 +7,7 @@ import           Data.List.Split
 import qualified Data.LSH.MinHash as MH
 import qualified Data.Map         as M
 import qualified Data.Set         as S
-import           Prelude          hiding (foldr)
+import           Prelude          hiding (foldr,lookup)
 
 
 data LSH k = LSH
@@ -44,15 +44,10 @@ nearest :: (Hashable a, Ord k)
            => [a]
            -> LSH k
            -> [k]
-nearest value lsh = S.toList $
-    foldr
-        (\chk res ->
-              case M.lookup
-                       (hash chk)
-                       (lshDB lsh) of
-                  Just s -> S.union s res
-                  Nothing -> res)
-        S.empty $
-    chunksOf
-        (lshRow lsh)
-        (MH.mhhash value (lshMH lsh))
+nearest value lsh = S.toList 
+                  $ foldr lookup S.empty 
+                  $ chunksOf (lshRow lsh) (MH.mhhash value (lshMH lsh))
+  where 
+    lookup chk res = case M.lookup (hash chk) (lshDB lsh) of
+      Just s  -> S.union s res
+      Nothing -> res
